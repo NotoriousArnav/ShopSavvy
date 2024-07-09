@@ -17,3 +17,7 @@ class Product(BaseModel):
     price: float
     currency: Currency = default_currency
     images: ImageCarousel
+
+    def inDescription(self, query):
+        """Check if query is in product description"""
+        return True if query.lower() in self.description.content.lower() else False

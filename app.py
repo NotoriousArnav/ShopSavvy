@@ -3,9 +3,15 @@ __import__("dotenv").load_dotenv() #Dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes import routers
+from schemas.currency import default_currency
 import os
 
-app = FastAPI()
+app = FastAPI(
+    title=os.getenv("STORE_NAME", "ShopSavvy"),
+    version="alpha",
+    description=f"""A software solution for store management.
+        Default Currency is set to {default_currency.name} ({default_currency.symbol})""",
+)
 
 app.add_middleware(
     CORSMiddleware,

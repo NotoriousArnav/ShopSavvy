@@ -11,8 +11,11 @@ router = APIRouter(
     tags=["Auth"],
 )
 
+"""Authentication routes of this API"""
+
 @router.post('/register')
 async def register_user(user: UserSchema):
+    """User Registration"""
     user.password = ph.hash(user.password)
     user = User(**user.dict())
     if getUser(user.username, email=user.email):
@@ -27,6 +30,7 @@ async def login(
             Depends()
         ]
     ):
+    """User Login"""
     user = authenticateUser(form_data.username, form_data.password)
     if not user:
         return {
@@ -44,11 +48,23 @@ async def login(
     }
  
 @router.get('/profile')
-async def test_token(current_user: Annotated[User, Depends(get_current_active_user)]):
+async def test_token(
+        current_user: Annotated[
+            User,
+            Depends(get_current_active_user)
+        ]
+    ):
+    """Retrive Profile Information"""
     return current_user
 
 @router.post('/profile')
-async def update_profile(user_data: UserSchema, current_user: Annotated[User, Depends(get_current_active_user)]):
+async def update_profile(
+        user_data: UserSchema,
+        current_user: Annotated[
+            User,
+            Depends(get_current_active_user)
+        ]
+    ):
     user_data.password = ph.hash(user_data.password)
     users.update_one(
         {
