@@ -1,0 +1,25 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+fastapi = "*"
+python-jose = "*"
+uvicorn = "*"
+argon2-cffi = "*"
+argon2-cffi-bindings = "*"
+markdown = "*"
+bson = "*"
+pymongo = "*"
+
+[dev-packages]
+
+[scripts]
+start = "uvicorn app:app --reload"
+start_all = "uvicorn app:app --reload --host 0.0.0.0"
+dev = "fastapi dev"
+
+[requires]
+python_version = "3.11"
+python_full_version = "3.11.2"
