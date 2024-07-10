@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from schemas.product import Product
 from typing import List, Annotated, Optional, Dict
 from schemas import ProductResponseModel, Product_w_ID
@@ -62,9 +62,18 @@ async def get_product(product_id: str):
     obj = Product(**product)
     return obj
 
+
+# TODO:Check for the Permission and its scopes. HTTPException will be raised if permission is not granted.
+
 @router.delete('/product/{product_id}', response_model=ProductResponseModel)
 async def delete_product(product_id: str, current_user: Annotated[User, Depends(get_current_user)]):
     """Delete Product by ID"""
+    # Prevent users from Deleting the Data
+    if current_user.role not in ['admin', 'staff']:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not authorized to perform this action"
+        )
     products.delete_one(
         {
             "_id": ObjectId(product_id)
@@ -75,6 +84,12 @@ async def delete_product(product_id: str, current_user: Annotated[User, Depends(
 @router.put('/product/{product_id}', response_model=Product)
 async def update_product(product_id: str, product: Product, current_user: Annotated[User, Depends(get_current_user)]):
     """Update Product by ID"""
+    # Prevnt users from Modifying the Data
+    if current_user.role not in ['admin', 'staff']:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not authorized to perform this action"
+        )
     products.update_one(
         {
             "_id": ObjectId(product_id)
@@ -88,6 +103,12 @@ async def update_product(product_id: str, product: Product, current_user: Annota
 @router.post('/product/', response_model=ProductResponseModel)
 async def add_product(product: Product, current_user: Annotated[User, Depends(get_current_user)]):
     """Add Product"""
+    # Protect from users. Only allow admin/staff role users to modify data. HTTPException will be raised if role is not admin/staff
+    if current_user.role not in ['admin', 'staff']:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not authorized to perform this action"
+        )
     pid = products.insert_one(product.dict())
     print(pid)
     return ProductResponseModel(product_id = str(pid.inserted_id))

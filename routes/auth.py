@@ -18,7 +18,7 @@ async def register_user(user: UserSchema):
     """User Registration"""
     user.password = ph.hash(user.password)
     user = User(**user.dict())
-    if getUser(user.username, email=user.email):
+    if getUser(user.username):
         return {"message": "User Already Exists"}
     users.insert_one(user.dict())
     return {"message": "User Created"}
