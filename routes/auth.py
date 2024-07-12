@@ -15,7 +15,15 @@ router = APIRouter(
 
 @router.post('/register')
 async def register_user(user: UserSchema):
-    """User Registration"""
+    """User Registration
+
+    Body
+    ----
+    - user: UserSchema
+        - username: str
+        - password: str
+        - email: EmailStr
+    """
     user.password = ph.hash(user.password)
     user = User(**user.dict())
     if getUser(user.username):
@@ -30,8 +38,17 @@ async def login(
             Depends()
         ]
     ):
-    """User Login"""
-    user = authenticateUser(form_data.username, form_data.password)
+    """User Login
+
+    Body
+    ----
+    - username: str
+    - password: str
+    """
+    user = authenticateUser(
+        form_data.username,
+        form_data.password
+    )
     if not user:
         return {
             "message": "Invalid Credentials"
@@ -41,7 +58,6 @@ async def login(
             "sub": user.username
         }
     )
-    print(access_token)
     return {
         "access_token": access_token,
         "token_type": "bearer"
@@ -54,7 +70,16 @@ async def test_token(
             Depends(get_current_active_user)
         ]
     ):
-    """Retrive Profile Information"""
+    """Retrive Profile Information
+
+    Returns
+    -------
+    - current_user: User
+        - username: str
+        - email: EmailStr
+        - role: Literal["admin", "staff", "user"]
+        - permissions: List[Permissions]
+    """
     return current_user
 
 @router.post('/profile')

@@ -11,3 +11,7 @@ class UserSchema(BaseModel):
     username: str
     password: str
     email: EmailStr = None
+
+
+class CatalogueResponseModel(BaseModel):
+    catalogue_id: str

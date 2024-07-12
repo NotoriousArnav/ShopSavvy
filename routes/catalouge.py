@@ -9,6 +9,14 @@ from bson import ObjectId
 import json
 from security import get_current_user
 
+async def admin_staff_check(current_user: Annotated[User, Depends(get_current_user)]):
+    if current_user.role not in ['admin', 'staff']:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not authorized to perform this action"
+        )
+    return current_user
+
 router = APIRouter(
     prefix="/catalouge",
     tags=["Catalouge"],
@@ -19,6 +27,8 @@ router = APIRouter(
 def filter_params(
     name: Optional[str] = Query(None),
     tags: Optional[List[str]] = Query(None),
+    in_desc: Optional[str] = Query(None),
+    in_short_desc: Optional[str] = Query(None),
     min_price: Optional[float] = Query(None),
     max_price: Optional[float] = Query(None),
 ) -> Dict:
@@ -26,6 +36,10 @@ def filter_params(
     
     if name:
         query['name'] = {'$regex': name, '$options': 'i'}
+    if in_desc:
+        query['description.content'] = {'$regex': in_desc, '$options': 'i'}
+    if in_short_desc:
+        query['short_description'] = {'$regex': in_short_desc, '$options': 'i'}
     if tags:
         query['tags'] = {'$all': tags.split(',')}
     if min_price is not None:
@@ -41,7 +55,18 @@ def filter_params(
 # Add filtering using URL Params
 @router.get('/product', response_model=List[Product_w_ID])
 async def get_products(query: Annotated[dict, Depends(filter_params)]):
-    """Get All Products"""
+    """Get All Products
+
+    Parameters
+    ----------
+    - name: Optional[str] = Query(None)
+    - tags: Optional[List[str]] = Query(None)
+    - in_desc: Optional[str] = Query(None)
+    - in_short_desc: Optional[str] = Query(None)
+    - min_price: Optional[float] = Query(None)
+    - max_price: Optional[float] = Query(None)
+
+    """
     products_list = [
         Product_w_ID(
             id=str(x.get('_id')),
@@ -52,13 +77,17 @@ async def get_products(query: Annotated[dict, Depends(filter_params)]):
 
 @router.get('/product/{product_id}', response_model=Product)
 async def get_product(product_id: str):
-    """Get Product by ID"""
+    """Get Product by ID
+
+    Parameters
+    ----------
+    - product_id: str
+    """
     product = products.find_one(
         {
             "_id": ObjectId(product_id)
         }
     )
-    # __import__('pprint').pprint(product)
     obj = Product(**product)
     return obj
 
@@ -66,14 +95,15 @@ async def get_product(product_id: str):
 # TODO:Check for the Permission and its scopes. HTTPException will be raised if permission is not granted.
 
 @router.delete('/product/{product_id}', response_model=ProductResponseModel)
-async def delete_product(product_id: str, current_user: Annotated[User, Depends(get_current_user)]):
-    """Delete Product by ID"""
-    # Prevent users from Deleting the Data
-    if current_user.role not in ['admin', 'staff']:
-        raise HTTPException(
-            status_code=403,
-            detail="You are not authorized to perform this action"
-        )
+async def delete_product(product_id: str, current_user: Annotated[User, Depends(admin_staff_check)]):
+    """Delete Product by ID
+
+    Parameters
+    ----------
+    - product_id: str
+
+    Token is Required to perform this action
+    """
     products.delete_one(
         {
             "_id": ObjectId(product_id)
@@ -82,14 +112,18 @@ async def delete_product(product_id: str, current_user: Annotated[User, Depends(
     return ProductResponseModel(product_id = product_id)
 
 @router.put('/product/{product_id}', response_model=Product)
-async def update_product(product_id: str, product: Product, current_user: Annotated[User, Depends(get_current_user)]):
-    """Update Product by ID"""
-    # Prevnt users from Modifying the Data
-    if current_user.role not in ['admin', 'staff']:
-        raise HTTPException(
-            status_code=403,
-            detail="You are not authorized to perform this action"
-        )
+async def update_product(product_id: str, product: Product, current_user: Annotated[User, Depends(admin_staff_check)]):
+    """Update Product by ID
+    Parameters
+    ----------
+    - product_id: str
+
+    Body
+    ----
+    - product: Product
+
+    Token is Required to perform this action
+    """
     products.update_one(
         {
             "_id": ObjectId(product_id)
@@ -101,14 +135,16 @@ async def update_product(product_id: str, product: Product, current_user: Annota
     return product
 
 @router.post('/product/', response_model=ProductResponseModel)
-async def add_product(product: Product, current_user: Annotated[User, Depends(get_current_user)]):
-    """Add Product"""
-    # Protect from users. Only allow admin/staff role users to modify data. HTTPException will be raised if role is not admin/staff
-    if current_user.role not in ['admin', 'staff']:
-        raise HTTPException(
-            status_code=403,
-            detail="You are not authorized to perform this action"
-        )
-    pid = products.insert_one(product.dict())
-    print(pid)
+async def add_product(product: Product, current_user: Annotated[User, Depends(admin_staff_check)]):
+    """Add Product
+    
+    Body
+    ----
+    - product: Product
+
+    Token is Required to perform this action.
+    """
+    pid = products.insert_one(
+        product.dict()
+    )
     return ProductResponseModel(product_id = str(pid.inserted_id))

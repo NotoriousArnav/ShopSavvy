@@ -10,4 +10,4 @@ db = client['shop']
 
 users = db['users']
 products = db['products']
-
+inventory = db['inventory']
